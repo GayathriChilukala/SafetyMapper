@@ -40,7 +40,18 @@
 *Coming Soon - Add screenshots of your deployed application*
 
 ```
-[Main Dashboard] [Chat Interface] [Route Planning] [Mobile View]
+[Main Dashboard]
+<img width="1469" alt="image" src="https://github.com/user-attachments/assets/895f6764-e456-42e1-ae50-f715833197b8" />
+
+[Chat Interface]
+<img width="666" alt="image" src="https://github.com/user-attachments/assets/a5e8e1e0-6f71-4cae-b308-afd2f1c3b5ae" />
+
+[Route Planning]
+<img width="1470" alt="image" src="https://github.com/user-attachments/assets/7dc34476-2f55-415f-a927-1d23f4a3dfc7" />
+
+[Mobile View]
+<img width="442" alt="image" src="https://github.com/user-attachments/assets/ce29b761-8665-4d50-aa46-e1de1ebf6a07" />
+
 ```
 
 ## 🛠️ Tech Stack
