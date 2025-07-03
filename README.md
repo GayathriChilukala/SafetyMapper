@@ -46,21 +46,21 @@
 ### 💬 AI Safety Assistant  
 *Intelligent chatbot powered by Google Gemini AI*
 
-![Chat Interface](./images/chat-interface.png)
+![Chat Interface](https://github.com/user-attachments/assets/a5e8e1e0-6f71-4cae-b308-afd2f1c3b5ae)
 
 > **Features shown:** Natural language safety queries, contextual responses, and floating chat interface
 
 ### 🛤️ Smart Route Planning
 *Safety-optimized routing with incident analysis*
 
-![Route Planning](./images/route-planning.png)
+![Route Planning](https://github.com/user-attachments/assets/7dc34476-2f55-415f-a927-1d23f4a3dfc7)
 
 > **Features shown:** Multi-modal routing, safety scoring, incident-aware path optimization
 
 ### 📱 Mobile Responsive Design
 *Fully responsive interface for mobile devices*
 
-![Mobile View](./images/mobile-view.png)
+![Mobile View](https://github.com/user-attachments/assets/ce29b761-8665-4d50-aa46-e1de1ebf6a07)
 
 ## 🛠️ Tech Stack
 
