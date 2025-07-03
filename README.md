@@ -36,31 +36,28 @@
 - **Secure API key management** and environment configuration
 
 ## 🖼️ Screenshots
+### 🗺️ Interactive Safety Map
 
 *Interactive map with real-time incident markers and safety resources*
-
-![Main Dashboard](https://github.com/user-attachments/assets/895f6764-e456-42e1-ae50-f715833197b8)
+<img src="https://github.com/user-attachments/assets/895f6764-e456-42e1-ae50-f715833197b8" width="600" alt="Main Dashboard">
 
 > **Features shown:** Live incident markers, map controls, safety resource overlays, and real-time data synchronization
 
 ### 💬 AI Safety Assistant  
 *Intelligent chatbot powered by Google Gemini AI*
-
-![Chat Interface](https://github.com/user-attachments/assets/a5e8e1e0-6f71-4cae-b308-afd2f1c3b5ae)
+<img src="https://github.com/user-attachments/assets/a5e8e1e0-6f71-4cae-b308-afd2f1c3b5ae" width="500" alt="Chat Interface">
 
 > **Features shown:** Natural language safety queries, contextual responses, and floating chat interface
 
 ### 🛤️ Smart Route Planning
 *Safety-optimized routing with incident analysis*
-
-![Route Planning](https://github.com/user-attachments/assets/7dc34476-2f55-415f-a927-1d23f4a3dfc7)
+<img src="https://github.com/user-attachments/assets/7dc34476-2f55-415f-a927-1d23f4a3dfc7" width="600" alt="Route Planning">
 
 > **Features shown:** Multi-modal routing, safety scoring, incident-aware path optimization
 
 ### 📱 Mobile Responsive Design
 *Fully responsive interface for mobile devices*
-
-![Mobile View](https://github.com/user-attachments/assets/ce29b761-8665-4d50-aa46-e1de1ebf6a07)
+<img src="https://github.com/user-attachments/assets/ce29b761-8665-4d50-aa46-e1de1ebf6a07" width="300" alt="Mobile View">
 
 ## 🛠️ Tech Stack
 
