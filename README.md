@@ -39,7 +39,7 @@
 
 *Interactive map with real-time incident markers and safety resources*
 
-![Main Dashboard](./images/main-dashboard.png)
+![Main Dashboard](https://github.com/user-attachments/assets/895f6764-e456-42e1-ae50-f715833197b8)
 
 > **Features shown:** Live incident markers, map controls, safety resource overlays, and real-time data synchronization
 
