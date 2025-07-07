@@ -338,11 +338,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Recommended screenshots to include:**
 - Main dashboard with incident map
+- <img width="1469" alt="image" src="https://github.com/user-attachments/assets/3aaf75a8-1e4c-41d1-b0da-7c26ab3f6be7" />
+
 - AI Safety Assistant chat interface
+- <img width="446" alt="image" src="https://github.com/user-attachments/assets/9a19b657-b44b-4aa1-9088-995015c7acd7" />
+
 - Incident reporting form with photo upload
+- <img width="1459" alt="image" src="https://github.com/user-attachments/assets/9cab7ea5-141b-49cd-9599-eca8f73d1350" />
+
 - Route planning with safety analysis
+- <img width="1452" alt="image" src="https://github.com/user-attachments/assets/3e62078a-9220-4670-9857-a21a60474c0a" />
+
 - Mobile responsive interface
-- Different view modes (Incidents, Heatmap, Safety Resources)
+- <img width="445" alt="image" src="https://github.com/user-attachments/assets/f8976948-4f01-47c4-bc35-df74993d46d2" />
+
+- Vertex AI Safety Screenshots
+- Safe User Query
+- <img width="377" alt="image" src="https://github.com/user-attachments/assets/fcf333a9-b51e-48eb-8c21-e961711cbd07" />
+
+- Blocked Dangerous Content
+- <img width="383" alt="image" src="https://github.com/user-attachments/assets/0a30c9dc-f904-4951-b9b8-5afb52b003ca" />
+
 
 ### Demo Videos
 *[Add demo videos here to show application functionality]*
