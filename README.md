@@ -1,378 +1,368 @@
 # 🛡️ SafetyMapper - Community Safety Platform
 
-<div align="center">
+A comprehensive community safety platform that combines real-time incident reporting, AI-powered safety analysis, interactive mapping, and intelligent route planning to help communities stay safe.
 
-![SafetyMapper Logo](https://img.shields.io/badge/SafetyMapper-Community%20Safety-blue?style=for-the-badge&logo=shield&logoColor=white)
+![SafetyMapper](https://img.shields.io/badge/SafetyMapper-Community%20Safety%20Platform-blue)
+![Python](https://img.shields.io/badge/Python-3.9+-green)
+![Flask](https://img.shields.io/badge/Flask-2.3.3-red)
+![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Firestore%20%7C%20Maps%20%7C%20Gemini-orange)
+![AI](https://img.shields.io/badge/AI-Gemini%20Pro%20%7C%20Vertex%20AI-purple)
 
-**Complete Community Safety Platform with AI-Powered Assistance**
+## 🌟 Features
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python)](https://python.org)
-[![Flask](https://img.shields.io/badge/Flask-2.0+-green?style=flat-square&logo=flask)](https://flask.palletsprojects.com)
-[![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Enabled-orange?style=flat-square&logo=googlecloud)](https://cloud.google.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+### 🗺️ Interactive Mapping
+- **Real-time incident visualization** with Google Maps integration
+- **Multiple view modes**: Incidents, Heatmap, Safety Resources, All Data
+- **Location-based incident clustering** and severity color coding
+- **Police stations and hospitals overlay** for emergency resources
+- **Click-to-select locations** for incident reporting
 
-[🚀 Quick Start](#-quick-start) • [📋 Features](#-features) • [⚙️ Setup](#%EF%B8%8F-setup) • [🔧 Configuration](#-configuration) • [📖 API Documentation](#-api-documentation)
+### 🤖 AI Safety Assistant
+- **Powered by Google Gemini Pro** for intelligent safety analysis
+- **Vertex AI Safety moderation** with multi-layered content filtering
+- **Location-specific safety insights** based on real incident data
+- **Professional floating chat interface** with mobile optimization
+- **Natural language queries** for safety questions and recommendations
 
-</div>
+### 📊 Incident Management
+- **Real-time incident reporting** with photo upload support
+- **Google Cloud Firestore integration** for scalable data storage
+- **Multi-severity classification** (Low, Medium, High)
+- **Incident type categorization** (Theft, Assault, Harassment, Vandalism, Suspicious, Other)
+- **Automatic geocoding** and location validation
+- **Photo compression and validation** (max 2MB, JPEG optimization)
 
----
+### 🛤️ Safe Route Planning
+- **Multi-modal route planning** (Walking, Driving, Transit, Bicycling)
+- **Incident-based risk analysis** along routes
+- **Safety scoring algorithm** with resource proximity calculation
+- **Route segment visualization** with color-coded risk levels
+- **Persistent route display** across browser tabs
+- **Clear route functionality** for easy reset
 
-## 📋 Features
-
-### 🤖 **AI-Powered Safety Assistant**
-- **Advanced Chat Interface** with Google Gemini Pro
-- **Multi-layered Content Moderation** using Vertex AI Safety
-- **Natural Language Safety Queries** with contextual responses
-- **Real-time Incident Analysis** for personalized advice
-
-### 🗺️ **Interactive Safety Mapping**
-- **Real-time Incident Visualization** with multiple view modes
-- **Safety Resource Overlay** (police stations, hospitals)
-- **Incident Heatmap** for risk density analysis
-- **Multi-modal Route Planning** (driving, walking, transit, cycling)
-- **Safety-aware Route Analysis** with incident correlation
-
-### 📊 **Incident Reporting System**
-- **Real-time Reporting** with Google Firestore integration
-- **Photo Upload Support** with automatic compression
-- **Geocoding & Address Validation** via Google Maps
-- **Severity Classification** and categorization
-- **Community-driven Data** collection
-
-### 🛡️ **Enterprise Security**
-- **Vertex AI Safety Filtering** for all user interactions
-- **Privacy-focused Design** with data protection
-- **Input Validation** and sanitization
-- **Professional Content Guidelines** enforcement
-
----
+### 🔒 Advanced Security
+- **Vertex AI Safety Moderator** with content filtering
+- **Multi-layered safety checks**: Content, Brand, Alignment, Security/Privacy
+- **Dangerous content detection** with keyword and AI filtering
+- **Professional communication standards** enforcement
+- **Privacy protection** for user data
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.9 or higher
 - Google Cloud Platform account
-- Google Maps API access
-- Git
+- Google Maps API key
+- Google Gemini API key
+- Google Cloud Firestore database
 
 ### Installation
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/safetymapper.git
-cd safetymapper
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/safetymapper.git
+   cd safetymapper
+   ```
 
-# Install dependencies
-pip install -r requirements.txt
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-# Configure environment variables
-cp .env.example .env
-# Edit .env with your API keys
+3. **Configure API keys**
+   
+   Edit `main.py` and replace the placeholder API keys:
+   ```python
+   GOOGLE_MAPS_API_KEY = "your_google_maps_api_key"
+   GOOGLE_CLOUD_PROJECT = "your_google_cloud_project_id"
+   GEMINI_API_KEY = "your_gemini_api_key"
+   ```
 
-# Run the application
-python main.py
+4. **Set up Google Cloud Firestore**
+   - Create a Firestore database in your Google Cloud project
+   - Enable the Firestore API
+   - Set up authentication (service account or default credentials)
+
+5. **Run the application**
+   ```bash
+   python main.py
+   ```
+
+6. **Access the application**
+   - Open your browser and go to `http://localhost:8000`
+   - The application will automatically initialize sample data if the database is empty
+
+## 🏗️ Architecture
+
+### Core Components
+
+#### 1. **VertexAISafetyModerator**
+- Multi-layered content safety filtering
+- Brand safety and alignment checks
+- Security and privacy protection
+- Fallback to basic filtering if AI unavailable
+
+#### 2. **FirestoreIncidentManager**
+- Real-time incident storage and retrieval
+- Location-based data analysis
+- Automatic timestamp formatting
+- Sample data initialization
+
+#### 3. **AI Safety Assistant**
+- Google Gemini Pro integration
+- Location-specific safety analysis
+- Context-aware responses
+- Professional chat interface
+
+#### 4. **Route Planning Engine**
+- Google Maps Directions API integration
+- Incident proximity analysis
+- Safety scoring algorithm
+- Multi-modal route optimization
+
+### Data Flow
+
+```
+User Input → Vertex AI Safety Check → Database Query → AI Analysis → Response
+     ↓              ↓                    ↓              ↓           ↓
+  Incident     Content Filter      Firestore Data   Gemini AI   Formatted
+  Report       Brand Safety        Location Data    Context     Response
 ```
 
-**🌐 Access:** Open `http://localhost:8000` in your browser
+## 📡 API Endpoints
 
----
+### Core Endpoints
 
-## ⚙️ Setup
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Main application interface |
+| `/api/ai-chat` | POST | AI Safety Assistant chat |
+| `/api/incidents` | GET | Retrieve recent incidents |
+| `/api/incidents` | POST | Create new incident report |
+| `/api/route` | POST | Plan safe route |
+| `/api/safety-resources` | GET | Get police/hospital data |
+| `/api/test-photo` | POST | Test photo upload |
 
-### 1. **Google Cloud Setup**
+### Request Examples
 
-#### Enable Required APIs:
-```bash
-gcloud services enable maps-backend.googleapis.com
-gcloud services enable places-backend.googleapis.com
-gcloud services enable geocoding-backend.googleapis.com
-gcloud services enable firestore.googleapis.com
-gcloud services enable aiplatform.googleapis.com
-```
-
-#### Create Service Account:
-```bash
-gcloud iam service-accounts create safetymapper-service
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
-    --member="serviceAccount:safetymapper-service@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-    --role="roles/firestore.user"
-```
-
-### 2. **API Keys Required**
-
-| Service | Key Type | Purpose |
-|---------|----------|---------|
-| Google Maps | API Key | Mapping, geocoding, places |
-| Google Cloud | Project ID | Firestore database |
-| Gemini AI | API Key | AI chat assistant |
-
-### 3. **Dependencies**
-
-```bash
-pip install flask
-pip install google-cloud-firestore
-pip install google-generativeai
-pip install googlemaps
-pip install requests
-```
-
----
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file or update `main.py` directly:
-
-```python
-# Google API Configuration
-GOOGLE_MAPS_API_KEY = "your_maps_api_key_here"
-GOOGLE_CLOUD_PROJECT = "your_project_id_here" 
-GEMINI_API_KEY = "your_gemini_api_key_here"
-
-# Optional: Custom Configuration
-DEBUG_MODE = True
-PORT = 8000
-HOST = "0.0.0.0"
-```
-
-### Firestore Setup
-
-1. **Create Firestore Database:**
-   - Go to [Google Cloud Console](https://console.cloud.google.com)
-   - Navigate to Firestore
-   - Create database in "Native Mode"
-   - Choose your preferred region
-
-2. **Security Rules:**
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /incidents/{document} {
-      allow read, write: if true; // Adjust based on your security needs
-    }
-  }
+#### Create Incident
+```json
+POST /api/incidents
+{
+  "type": "theft",
+  "location": "123 Main St, Bethesda, MD",
+  "description": "Bike theft near metro station",
+  "severity": "medium"
 }
 ```
 
----
-
-## 📖 API Documentation
-
-### Chat Endpoint
-```http
+#### AI Chat
+```json
 POST /api/ai-chat
-Content-Type: application/json
-
 {
   "message": "Is it safe to walk downtown at night?"
 }
 ```
 
-### Incident Reporting
-```http
-POST /api/incidents
-Content-Type: application/json
-
-{
-  "type": "theft",
-  "location": "123 Main St, City, State",
-  "description": "Bike stolen from rack",
-  "severity": "medium",
-  "has_photo": false
-}
-```
-
-### Route Planning
-```http
+#### Route Planning
+```json
 POST /api/route
-Content-Type: application/json
-
 {
-  "origin": "Start Address",
-  "destination": "End Address", 
+  "origin": "Bethesda Metro Station",
+  "destination": "Downtown Bethesda",
   "travel_mode": "WALKING"
 }
 ```
 
-### Safety Resources
-```http
-GET /api/safety-resources?lat=38.9847&lng=-77.0947&zoom=12
+## 🎨 User Interface
+
+### Main Dashboard
+- **Interactive Google Maps** with incident markers
+- **Real-time incident reporting** form
+- **Recent incidents sidebar** with click-to-highlight
+- **Route planning panel** with safety analysis
+- **Floating AI chat button** for instant assistance
+
+### View Modes
+1. **📍 Incidents**: Individual incident markers
+2. **🔥 Heatmap**: Density visualization
+3. **🚔 Safety Resources**: Police stations and hospitals
+4. **🌟 All Data**: Combined view
+
+### Mobile Responsive
+- Optimized for all device sizes
+- Touch-friendly interface
+- Responsive chat modal
+- Mobile-optimized controls
+
+## 🔧 Configuration
+
+### Environment Variables
+```bash
+GOOGLE_CLOUD_PROJECT=your_project_id
+GOOGLE_MAPS_API_KEY=your_maps_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
----
+### Google Cloud Setup
+1. **Enable APIs**:
+   - Google Maps JavaScript API
+   - Google Maps Directions API
+   - Google Maps Places API
+   - Google Maps Geocoding API
+   - Firestore API
+   - **Vertex AI API** (for safety moderation)
+   - **Generative AI API** (for Gemini integration)
 
-## 🎯 Usage Examples
+2. **Set up Firestore**:
+   - Create database in native mode
+   - Set up security rules
+   - Configure indexes if needed
 
-### 💬 **AI Chat Examples**
-```
-✅ "Is it safe to walk in downtown at night?"
-✅ "What recent incidents happened in my area?"
-✅ "How safe is the Silver Spring area?"
-✅ "What areas should I avoid?"
+3. **Configure Gemini**:
+   - Enable Vertex AI API
+   - Set up API key with appropriate permissions
+   - Ensure billing is enabled for AI services
 
-🚫 Inappropriate content is automatically filtered
-```
-
-### 📍 **Map Interactions**
-- **Click anywhere** on the map to select incident location
-- **Toggle views:** Incidents → Heatmap → Safety Resources → All
-- **Route planning:** Enter start/end points for safety analysis
-
-### 📊 **Incident Reporting**
-1. Select incident type (theft, assault, harassment, etc.)
-2. Click map location or enter address
-3. Add description and severity level
-4. Optional: Upload photo (auto-compressed)
-5. Submit → Real-time Firestore storage
-
----
+4. **Vertex AI Safety Setup**:
+   - Enable Vertex AI API in your Google Cloud Console
+   - The safety features use Gemini's built-in safety filters
+   - No additional API keys needed beyond Gemini API key
 
 ## 🚀 Deployment
 
+### Google Cloud App Engine
+```bash
+# Deploy to App Engine
+gcloud app deploy app.yaml
+```
+
 ### Local Development
 ```bash
+# Run with debug mode
 python main.py
-# Access: http://localhost:8000
+
+# Run with production settings
+export FLASK_ENV=production
+python main.py
 ```
 
-### Production Deployment
-
-#### Google Cloud Run
-```bash
-# Build container
-gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/safetymapper
-
-# Deploy
-gcloud run deploy safetymapper \
-  --image gcr.io/YOUR_PROJECT_ID/safetymapper \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated
+### Docker Deployment
+```dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["python", "main.py"]
 ```
 
-#### Heroku
-```bash
-# Create Procfile
-echo "web: python main.py" > Procfile
+## 📊 Data Schema
 
-# Deploy
-heroku create your-safetymapper-app
-git push heroku main
+### Incident Structure
+```json
+{
+  "incident_id": "uuid",
+  "type": "theft|assault|harassment|vandalism|suspicious|other",
+  "location": "formatted_address",
+  "latitude": 38.9847,
+  "longitude": -77.0947,
+  "description": "incident_description",
+  "severity": "low|medium|high",
+  "created_at": "timestamp",
+  "source": "user_report",
+  "status": "active",
+  "reporter_info": {
+    "ip_address": "user_ip",
+    "user_agent": "browser_info",
+    "report_time": "timestamp"
+  }
+}
 ```
 
----
-
-## 🧪 Testing
-
-### Manual Testing
-```bash
-# Test safety filtering
-curl -X POST http://localhost:8000/api/ai-chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Is downtown safe at night?"}'
-
-# Test incident reporting  
-curl -X POST http://localhost:8000/api/incidents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "theft",
-    "location": "123 Main St",
-    "description": "Test incident",
-    "severity": "low"
-  }'
-```
-
-### Built-in Safety Tests
-The application includes automated safety testing that runs on startup in debug mode.
-
----
-
-## 🔒 Security & Privacy
-
-### Data Protection
-- **No Personal Information Storage** - IP addresses logged for security only
-- **Photo Compression** - Automatic image optimization before storage
-- **Content Filtering** - Multi-layered AI safety checks
-- **Secure APIs** - Input validation and sanitization
+## 🔒 Security Features
 
 ### Content Moderation
-- **Vertex AI Safety** - Google's enterprise-grade content filtering
-- **Multi-category Filtering** - Violence, harassment, inappropriate content
-- **Real-time Analysis** - Every message processed before response
-- **Professional Guidelines** - Maintains community-appropriate interactions
+- **Vertex AI Safety filtering** for harmful content
+- **Keyword-based detection** for dangerous content
+- **Brand safety enforcement** for professional communication
+- **Privacy protection** for sensitive information
 
----
+### Data Protection
+- **Input validation** and sanitization
+- **Rate limiting** on API endpoints
+- **Secure API key management**
+- **Firestore security rules**
 
 ## 🤝 Contributing
 
-1. **Fork** the repository
-2. **Create** feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to branch (`git push origin feature/amazing-feature`)
-5. **Open** Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ### Development Guidelines
 - Follow PEP 8 style guidelines
-- Add tests for new features
+- Add comprehensive docstrings
+- Include error handling
+- Write unit tests for new features
 - Update documentation
-- Ensure security best practices
 
----
-
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🙏 Acknowledgments
+
+- **Google Cloud Platform** for infrastructure and APIs
+- **Google Gemini** for AI capabilities
+- **Google Maps** for mapping and geolocation
+- **Flask** for the web framework
+- **Community contributors** for feedback and improvements
+
+## 📸 Screenshots & Documentation
+
+### Application Screenshots
+*[Add screenshots here to showcase the application interface]*
+
+**Recommended screenshots to include:**
+- Main dashboard with incident map
+- AI Safety Assistant chat interface
+- Incident reporting form with photo upload
+- Route planning with safety analysis
+- Mobile responsive interface
+- Different view modes (Incidents, Heatmap, Safety Resources)
+
+### Demo Videos
+*[Add demo videos here to show application functionality]*
+
+**Recommended demo content:**
+- Complete incident reporting workflow
+- AI Safety Assistant interactions
+- Route planning and safety analysis
+- Mobile usage demonstration
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/safetymapper/issues)
+- **Documentation**: [Wiki](https://github.com/yourusername/safetymapper/wiki)
+- **Email**: support@safetymapper.com
+
+## 🔄 Version History
+
+- **v1.0.0** - Initial release with core features
+- **v1.1.0** - Added AI Safety Assistant
+- **v1.2.0** - Enhanced route planning
+- **v1.3.0** - Photo upload support
+- **v1.4.0** - Vertex AI Safety integration
+
 ---
 
-## 🆘 Support
+**Made with ❤️ for safer communities**
 
-### Common Issues
+## 🚀 Deployment
 
-**❌ "Google Maps not loading"**
-```bash
-# Check API key permissions
-# Ensure Maps JavaScript API is enabled
-# Verify billing is set up
+### Google Cloud App Engine
 ```
-
-**❌ "Firestore connection failed"**
-```bash
-# Verify project ID is correct
-# Check service account permissions
-# Ensure Firestore is enabled
-```
-
-**❌ "AI chat not responding"**
-```bash
-# Verify Gemini API key
-# Check API quotas
-# Review safety filter logs
-```
-
-### Getting Help
-- 📧 **Email:** support@safetymapper.com
-- 🐛 **Issues:** [GitHub Issues](https://github.com/yourusername/safetymapper/issues)
-- 📖 **Documentation:** [Wiki](https://github.com/yourusername/safetymapper/wiki)
-
----
-
-## 🎉 Acknowledgments
-
-- **Google Cloud Platform** for enterprise infrastructure
-- **Google Gemini** for AI-powered assistance  
-- **Google Maps** for mapping and geocoding services
-- **Vertex AI** for content safety and moderation
-- **Open Source Community** for inspiration and tools
-
----
-
-<div align="center">
-
-**Made with ❤️ for Community Safety**
-
-[⭐ Star this repo](https://github.com/yourusername/safetymapper) • [🐛 Report Bug](https://github.com/yourusername/safetymapper/issues) • [✨ Request Feature](https://github.com/yourusername/safetymapper/issues)
-
-</div>
