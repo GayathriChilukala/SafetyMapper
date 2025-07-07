@@ -62,6 +62,16 @@
 *Fully responsive interface for mobile devices*
 <img src="https://github.com/user-attachments/assets/ce29b761-8665-4d50-aa46-e1de1ebf6a07" width="300" alt="Mobile View">
 
+### Guardrails 
+
+imag1
+<img width="382" alt="image" src="https://github.com/user-attachments/assets/4621c7e6-4371-42fb-97fb-41f583641183" />
+
+img 2
+<img width="389" alt="image" src="https://github.com/user-attachments/assets/fcbb0d64-933f-4471-a68d-fbe1a274ac66" />
+
+img3
+<img width="380" alt="image" src="https://github.com/user-attachments/assets/46bedc2f-9098-4da5-977a-70aa148cbde4" />
 
 ## 🛠️ Tech Stack
 
