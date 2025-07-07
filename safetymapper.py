@@ -147,8 +147,24 @@ class VertexAISafetyModerator:
             return self.basic_content_check(message)
     
     def _check_content_safety(self, message):
-        """Check for harmful content, profanity, violence using Gemini safety filters"""
+        """Check for harmful content, profanity, violence using keyword and AI safety filters"""
         try:
+            message_lower = message.lower()
+            
+            # Check for dangerous content keywords first (faster)
+            dangerous_keywords = [
+                'bomb', 'explosive', 'weapon', 'gun', 'shoot', 'kill', 'murder', 'suicide',
+                'terrorist', 'attack', 'hack', 'steal', 'rob', 'drug', 'illegal'
+            ]
+            
+            if any(keyword in message_lower for keyword in dangerous_keywords):
+                return {
+                    'blocked': True,
+                    'category': 'CONTENT_SAFETY',
+                    'reason': 'Dangerous content detected',
+                    'confidence': 0.9
+                }
+            
             # Configure strict safety settings for content
             safety_settings = [
                 {
@@ -222,33 +238,28 @@ class VertexAISafetyModerator:
     def _check_brand_safety(self, message):
         """Check for content that may not align with SafetyMapper brand values"""
         try:
-            brand_safety_prompt = f"""
-            Evaluate if this message aligns with a professional community safety platform's brand values: "{message}"
+            # Only check for obvious brand violations, not general questions
+            message_lower = message.lower()
             
-            Consider:
-            - Professional tone
-            - Community safety focus
-            - Helpful intent
-            - Appropriate for public safety discussions
+            # Allow safety-related questions and general inquiries
+            safety_keywords = ['safe', 'safety', 'crime', 'incident', 'security', 'danger', 'risk', 'police', 'emergency', 'help']
+            if any(keyword in message_lower for keyword in safety_keywords):
+                return {
+                    'blocked': False,
+                    'category': 'BRAND_SAFETY',
+                    'reason': 'Safety-related content aligns with brand values',
+                    'confidence': 0.9
+                }
             
-            Rate from 1-10 where 10 is perfectly aligned with brand values.
-            Respond with just the number.
-            """
-            
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(brand_safety_prompt)
-            
-            try:
-                brand_score = float(response.text.strip())
-                if brand_score < 6:  # Below 6/10 considered brand risk
-                    return {
-                        'blocked': True,
-                        'category': 'BRAND_SAFETY',
-                        'reason': f'Low brand alignment score: {brand_score}/10',
-                        'confidence': 0.7
-                    }
-            except ValueError:
-                pass  # If can't parse score, assume safe
+            # Only block obvious violations
+            inappropriate_words = ['fuck', 'shit', 'bitch', 'asshole', 'damn', 'hell']
+            if any(word in message_lower for word in inappropriate_words):
+                return {
+                    'blocked': True,
+                    'category': 'BRAND_SAFETY',
+                    'reason': 'Inappropriate language detected',
+                    'confidence': 0.8
+                }
             
             return {
                 'blocked': False,
@@ -268,23 +279,30 @@ class VertexAISafetyModerator:
     def _check_alignment(self, message):
         """Check if content is relevant and accurate for safety context"""
         try:
-            alignment_prompt = f"""
-            Is this message relevant to community safety, crime prevention, or emergency preparedness: "{message}"
+            # Use keyword-based approach instead of AI for better reliability
+            message_lower = message.lower()
             
-            Examples of relevant topics:
-            - Safety questions about neighborhoods
-            - Crime reporting and prevention
-            - Emergency preparedness
-            - Personal safety tips
-            - Security concerns
+            # Safety-related keywords that should be allowed
+            safety_keywords = [
+                'safe', 'safety', 'crime', 'incident', 'security', 'danger', 'risk',
+                'police', 'emergency', 'help', 'theft', 'assault', 'harassment',
+                'vandalism', 'suspicious', 'neighborhood', 'area', 'location',
+                'walk', 'night', 'day', 'shopping', 'downtown', 'street',
+                'rate', 'statistics', 'recent', 'happened', 'occurred'
+            ]
             
-            Respond with: RELEVANT or IRRELEVANT
-            """
+            # Check if message contains safety-related content
+            if any(keyword in message_lower for keyword in safety_keywords):
+                return {
+                    'blocked': False,
+                    'category': 'ALIGNMENT',
+                    'reason': 'Content relevant to safety context',
+                    'confidence': 0.9
+                }
             
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(alignment_prompt)
-            
-            if "IRRELEVANT" in response.text.upper():
+            # Only block obviously off-topic content
+            off_topic_keywords = ['weather', 'sports', 'politics', 'cooking', 'recipe', 'movie', 'music']
+            if any(keyword in message_lower for keyword in off_topic_keywords):
                 return {
                     'blocked': True,
                     'category': 'ALIGNMENT',
@@ -470,6 +488,21 @@ class FirestoreIncidentManager:
             incident_id = str(uuid.uuid4())
             current_time = datetime.utcnow()
             
+            # Validate photo data size
+            photo_data = None
+            photo_filename = None
+            has_photo = False
+            
+            if incident_data.get('has_photo') and incident_data.get('photo_data'):
+                photo_size = len(incident_data['photo_data'])
+                if photo_size > 1024 * 1024:  # 1MB limit for base64
+                    log_step(f"⚠️ Photo too large ({photo_size} bytes), storing without photo")
+                    has_photo = False
+                else:
+                    photo_data = incident_data['photo_data']
+                    photo_filename = incident_data.get('photo_filename')
+                    has_photo = True
+            
             document_data = {
                 'incident_id': incident_id,
                 'type': incident_data['type'],
@@ -481,6 +514,10 @@ class FirestoreIncidentManager:
                 'created_at': current_time,
                 'source': 'user_report',
                 'status': 'active',
+                'has_photo': has_photo,
+                'photo_data': photo_data,
+                'photo_filename': photo_filename,
+                'photo_uploaded_at': current_time if has_photo else None,
                 'reporter_info': {
                     'ip_address': incident_data.get('ip_address', ''),
                     'user_agent': incident_data.get('user_agent', ''),
@@ -508,7 +545,10 @@ class FirestoreIncidentManager:
                 'severity': document_data['severity'],
                 'timestamp': 'Just now',
                 'date': current_time.isoformat(),
-                'source': 'user_report'
+                'source': 'user_report',
+                'has_photo': has_photo,
+                'photo_data': photo_data,
+                'photo_filename': photo_filename
             }
             
         except Exception as e:
@@ -560,7 +600,10 @@ class FirestoreIncidentManager:
                             'severity': data.get('severity', 'low'),
                             'timestamp': self.format_timestamp(incident_time),
                             'date': incident_time.isoformat(),
-                            'source': data.get('source', 'unknown')
+                            'source': data.get('source', 'unknown'),
+                            'has_photo': data.get('has_photo', False),
+                            'photo_data': data.get('photo_data'),
+                            'photo_filename': data.get('photo_filename')
                         }
                         incidents.append(incident)
                         
@@ -595,7 +638,10 @@ class FirestoreIncidentManager:
                 'severity': 'medium',
                 'timestamp': '2 hours ago',
                 'date': (datetime.utcnow() - timedelta(hours=2)).isoformat(),
-                'source': 'sample_data'
+                'source': 'sample_data',
+                'has_photo': False,
+                'photo_data': None,
+                'photo_filename': None
             },
             {
                 'id': 'sample_2',
@@ -607,7 +653,10 @@ class FirestoreIncidentManager:
                 'severity': 'low',
                 'timestamp': '5 hours ago',
                 'date': (datetime.utcnow() - timedelta(hours=5)).isoformat(),
-                'source': 'sample_data'
+                'source': 'sample_data',
+                'has_photo': False,
+                'photo_data': None,
+                'photo_filename': None
             },
             {
                 'id': 'sample_3',
@@ -619,7 +668,10 @@ class FirestoreIncidentManager:
                 'severity': 'low',
                 'timestamp': '1 day ago',
                 'date': (datetime.utcnow() - timedelta(days=1)).isoformat(),
-                'source': 'sample_data'
+                'source': 'sample_data',
+                'has_photo': False,
+                'photo_data': None,
+                'photo_filename': None
             }
         ]
         return sample_incidents
@@ -677,17 +729,19 @@ class FirestoreIncidentManager:
 # ============================================================================
 
 def create_safety_context(incidents):
-    """Create clean context from incident data"""
+    """Create clean context from incident data with location-specific analysis"""
     context = {
         "has_local_data": len(incidents) > 0,
         "total_incidents": len(incidents),
         "incident_types": {},
         "recent_locations": [],
-        "severity_breakdown": {"high": 0, "medium": 0, "low": 0}
+        "severity_breakdown": {"high": 0, "medium": 0, "low": 0},
+        "location_breakdown": {},  # New: breakdown by location
+        "location_incidents": {}   # New: incidents by location
     }
     
     if incidents:
-        # Analyze incident types
+        # Analyze incident types and locations
         for incident in incidents:
             incident_type = incident.get('type', 'unknown')
             severity = incident.get('severity', 'low')
@@ -702,6 +756,30 @@ def create_safety_context(incidents):
             # Collect locations (limit to 5)
             if location and len(context["recent_locations"]) < 5:
                 context["recent_locations"].append(location)
+            
+            # Analyze by location
+            if location:
+                # Initialize location data if not exists
+                if location not in context["location_breakdown"]:
+                    context["location_breakdown"][location] = {
+                        "total": 0,
+                        "types": {},
+                        "severity": {"high": 0, "medium": 0, "low": 0}
+                    }
+                    context["location_incidents"][location] = []
+                
+                # Count incidents by location
+                context["location_breakdown"][location]["total"] += 1
+                context["location_breakdown"][location]["types"][incident_type] = context["location_breakdown"][location]["types"].get(incident_type, 0) + 1
+                context["location_breakdown"][location]["severity"][severity] += 1
+                
+                # Store incident details by location
+                context["location_incidents"][location].append({
+                    "type": incident_type,
+                    "severity": severity,
+                    "description": incident.get('description', ''),
+                    "timestamp": incident.get('timestamp', '')
+                })
     
     return context
 
@@ -772,24 +850,75 @@ def get_enhanced_gemini_response(user_message, context):
     raise Exception("All Gemini models failed")
 
 def create_local_data_prompt(user_message, context):
-    """Create prompt when local incident data is available"""
-    return f"""You are a professional Safety Assistant for the Bethesda/Silver Spring/Chevy Chase area.
+    """Create prompt that checks database first, then provides appropriate response"""
+    incident_types_list = list(context['incident_types'].items())
+    incident_types_text = ', '.join([f"{count} {type}" for type, count in incident_types_list[:5]])
+    
+    # Check if question mentions any location
+    location_keywords = ['chicago', 'new york', 'nyc', 'san diego', 'los angeles', 'miami', 'boston', 'philadelphia', 'atlanta', 'dallas', 'houston', 'seattle', 'denver', 'phoenix', 'las vegas', 'bethesda', 'silver spring', 'chevy chase', 'downtown', 'area', 'neighborhood', 'city']
+    mentioned_locations = [loc for loc in location_keywords if loc in user_message.lower()]
+    
+    # Check if database has data for mentioned locations
+    database_has_data = context['has_local_data'] and context['total_incidents'] > 0
+    
+    # Create location-specific data breakdown
+    location_data_text = ""
+    if context.get('location_breakdown'):
+        location_data_text = "\nLOCATION-SPECIFIC DATA:\n"
+        for location, data in context['location_breakdown'].items():
+            types_text = ', '.join([f"{count} {type}" for type, count in data['types'].items()])
+            location_data_text += f"- {location}: {data['total']} incidents ({types_text})\n"
+    
+    if mentioned_locations and not database_has_data:
+        # Location mentioned but not in database - provide general safety advice
+        return f"""You are a professional Safety Assistant. The user is asking about safety in a location that is not in your local database.
 
 USER QUESTION: "{user_message}"
 
-LOCAL DATA AVAILABLE:
-- {context['total_incidents']} recent incidents
-- Types: {dict(list(context['incident_types'].items())[:3])}
-- Severity: {context['severity_breakdown']['high']} high, {context['severity_breakdown']['medium']} medium, {context['severity_breakdown']['low']} low
+DATABASE STATUS: No local incident data available for the mentioned location.
 
 INSTRUCTIONS:
-1. Give a direct, helpful answer in 2-3 short paragraphs
-2. Reference the local data when relevant
-3. Provide actionable safety advice
-4. Keep it professional and reassuring
-5. Use simple language, avoid technical jargon
+1. Provide helpful general safety advice for urban areas
+2. Suggest resources for getting location-specific information
+3. Keep response professional and helpful
+4. Focus on general safety principles that apply to any city/area
+5. Do NOT mention local incident data since it's not available for this location
+6. Be encouraging and provide actionable safety tips"""
+    
+    elif database_has_data:
+        # Database has data - use it for specific advice
+        return f"""You are a professional Safety Assistant with access to local incident data.
 
-Format: Start with a clear answer, then provide practical advice."""
+USER QUESTION: "{user_message}"
+
+LOCAL DATABASE DATA AVAILABLE:
+- {context['total_incidents']} total incidents in database
+- Incident breakdown: {incident_types_text}
+- Severity distribution: {context['severity_breakdown']['high']} high, {context['severity_breakdown']['medium']} medium, {context['severity_breakdown']['low']} low
+- Areas with activity: {', '.join(context.get('recent_locations', [])[:5])}{location_data_text}
+
+INSTRUCTIONS:
+1. Use the local data to provide specific safety advice
+2. Reference specific incident types and locations when relevant
+3. Keep responses helpful and actionable
+4. Use simple, clear language
+5. Be honest about data limitations
+6. If user asks about a specific location, check if we have data for that location and provide location-specific analysis"""
+    
+    else:
+        # No specific location mentioned and no database data
+        return f"""You are a professional Safety Assistant.
+
+USER QUESTION: "{user_message}"
+
+DATABASE STATUS: No local incident data available.
+
+INSTRUCTIONS:
+1. Provide helpful general safety advice
+2. Keep response professional and helpful
+3. Focus on general safety principles
+4. Be encouraging and provide actionable safety tips
+5. Ask for more specific location if needed for better advice"""
 
 def create_general_safety_prompt(user_message):
     """Create prompt when no local data is available"""
@@ -811,24 +940,47 @@ Format: Give direct advice without referencing specific local data."""
 def format_clean_response(response_text, context):
     """Format response in a clean, professional way"""
     
-    # Create status header
+    # Create status header based on actual data coverage
     if context["has_local_data"]:
-        if context["severity_breakdown"]["high"] > 0:
-            status_color = "#ff9999"
-            status_icon = "⚠️"
-            status_text = f"Monitor conditions - {context['total_incidents']} recent incidents"
-        elif context["total_incidents"] > 5:
-            status_color = "#ffcc99"
-            status_icon = "🔍"
-            status_text = f"Stay aware - {context['total_incidents']} recent incidents"
+        # Check what locations are actually in the database
+        locations_in_db = list(context.get('location_breakdown', {}).keys())
+        
+        # Determine if we have local area data vs broader data
+        local_areas = ['bethesda', 'silver spring', 'chevy chase']
+        has_local_data = any(any(local in loc.lower() for local in local_areas) for loc in locations_in_db)
+        
+        if has_local_data:
+            # We have local area data
+            if context["severity_breakdown"]["high"] > 0:
+                status_color = "#ff9999"
+                status_icon = "⚠️"
+                status_text = f"Monitor conditions - {context['total_incidents']} recent incidents in local area"
+            elif context["total_incidents"] > 5:
+                status_color = "#ffcc99"
+                status_icon = "🔍"
+                status_text = f"Stay aware - {context['total_incidents']} recent incidents in local area"
+            else:
+                status_color = "#99ff99"
+                status_icon = "✅"
+                status_text = f"Generally safe - {context['total_incidents']} recent incidents in local area"
         else:
-            status_color = "#99ff99"
-            status_icon = "✅"
-            status_text = f"Generally safe - {context['total_incidents']} recent incidents"
+            # We have broader data (multiple cities)
+            if context["severity_breakdown"]["high"] > 0:
+                status_color = "#ff9999"
+                status_icon = "⚠️"
+                status_text = f"Database contains {context['total_incidents']} incidents across multiple areas"
+            elif context["total_incidents"] > 5:
+                status_color = "#ffcc99"
+                status_icon = "🔍"
+                status_text = f"Database contains {context['total_incidents']} incidents across multiple areas"
+            else:
+                status_color = "#99ff99"
+                status_icon = "✅"
+                status_text = f"Database contains {context['total_incidents']} incidents across multiple areas"
     else:
         status_color = "#e6f3ff"
         status_icon = "📍"
-        status_text = "No recent local incidents reported"
+        status_text = "No recent incidents reported in database"
     
     header = f"""<div style="background: {status_color}; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
     <strong>{status_icon} {status_text}</strong>
@@ -852,41 +1004,114 @@ def get_clean_fallback_response(user_message, context):
     """Clean fallback responses when Gemini is not available"""
     message_lower = user_message.lower()
     
-    # Status header
-    if context["has_local_data"]:
+    # Check if question mentions any location
+    location_keywords = ['chicago', 'new york', 'nyc', 'san diego', 'los angeles', 'miami', 'boston', 'philadelphia', 'atlanta', 'dallas', 'houston', 'seattle', 'denver', 'phoenix', 'las vegas', 'bethesda', 'silver spring', 'chevy chase', 'downtown', 'area', 'neighborhood', 'city']
+    mentioned_locations = [loc for loc in location_keywords if loc in message_lower]
+    
+    # Check if database has data for mentioned locations
+    database_has_data = context['has_local_data'] and context['total_incidents'] > 0
+    
+    # Create appropriate header based on situation
+    if mentioned_locations and not database_has_data:
+        # Location mentioned but not in database
+        header = f"""<div style="background: #e6f3ff; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
+        <strong>🌍 General Safety Advice</strong>
+        </div>"""
+    elif database_has_data:
+        # Database has data - check what locations are actually in the database
         total = context["total_incidents"]
         high_severity = context["severity_breakdown"]["high"]
+        locations_in_db = list(context.get('location_breakdown', {}).keys())
         
-        if high_severity > 0:
-            header = f"""<div style="background: #ff9999; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
-            <strong>⚠️ Monitor conditions - {total} recent incidents ({high_severity} high severity)</strong>
-            </div>"""
+        # Determine if we have local area data vs broader data
+        local_areas = ['bethesda', 'silver spring', 'chevy chase']
+        has_local_data = any(any(local in loc.lower() for local in local_areas) for loc in locations_in_db)
+        
+        if has_local_data:
+            # We have local area data
+            if high_severity > 0:
+                header = f"""<div style="background: #ff9999; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
+                <strong>⚠️ Monitor conditions - {total} recent incidents in local area ({high_severity} high severity)</strong>
+                </div>"""
+            else:
+                header = f"""<div style="background: #99ff99; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
+                <strong>✅ Generally safe - {total} recent incidents in local area (mostly low severity)</strong>
+                </div>"""
         else:
-            header = f"""<div style="background: #99ff99; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
-            <strong>✅ Generally safe - {total} recent incidents (mostly low severity)</strong>
-            </div>"""
+            # We have broader data (multiple cities)
+            if high_severity > 0:
+                header = f"""<div style="background: #ff9999; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
+                <strong>⚠️ Database contains {total} incidents across multiple areas ({high_severity} high severity)</strong>
+                </div>"""
+            else:
+                header = f"""<div style="background: #99ff99; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
+                <strong>✅ Database contains {total} incidents across multiple areas (mostly low severity)</strong>
+                </div>"""
     else:
+        # No specific location mentioned and no database data
         header = f"""<div style="background: #e6f3ff; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em;">
-        <strong>📍 No recent local incidents reported</strong>
+        <strong>📍 No recent incidents reported in database</strong>
         </div>"""
     
     # Response based on question type
-    if any(word in message_lower for word in ['safe', 'safety', 'night', 'walk']):
-        if context["has_local_data"]:
-            high_risk_areas = [loc for loc in context["recent_locations"][:2]]
-            response = f"""Based on recent data, here's what I recommend:<br><br>
+    if any(word in message_lower for word in ['safe', 'safety', 'night', 'walk', 'shopping', 'downtown']):
+        if mentioned_locations and not database_has_data:
+            # Location mentioned but not in database - provide general safety advice
+            response = f"""<strong>General Safety Tips for Urban Areas:</strong><br><br>
+            
+            <strong>Night Safety:</strong><br>
+            • Stick to well-lit, populated streets<br>
+            • Avoid walking alone at night when possible<br>
+            • Stay aware of your surroundings<br>
+            • Keep phone charged and accessible<br>
+            • Trust your instincts about safety<br><br>
+            
+            <strong>General Precautions:</strong><br>
+            • Don't display expensive items or electronics<br>
+            • Keep belongings close and secure<br>
+            • Use ride-sharing services for longer distances<br>
+            • Let someone know your plans and expected return time<br>
+            • Consider carrying a personal safety device (where legal)<br><br>
+            
+            <strong>For Specific City Information:</strong><br>
+            • Check local police department websites<br>
+            • Use city-specific safety apps<br>
+            • Research neighborhood safety ratings<br>
+            • Stay updated with local news"""
+        elif database_has_data:
+            # Database has data - use it for specific advice
+            high_risk_areas = [loc for loc in context["recent_locations"][:3]]
+            incident_types_list = list(context['incident_types'].items())
+            incident_types_text = ', '.join([f"{count} {type}" for type, count in incident_types_list[:3]])
+            
+            # Check if we have local area data vs broader data
+            locations_in_db = list(context.get('location_breakdown', {}).keys())
+            local_areas = ['bethesda', 'silver spring', 'chevy chase']
+            has_local_data = any(any(local in loc.lower() for local in local_areas) for loc in locations_in_db)
+            
+            if has_local_data:
+                area_name = "local area (Bethesda/Silver Spring/Chevy Chase)"
+            else:
+                area_name = "database (multiple areas)"
+            
+            response = f"""Based on complete data for the {area_name}:<br><br>
             
             <strong>Current Situation:</strong><br>
-            • {context['total_incidents']} incidents reported recently<br>
-            • Main types: {', '.join(list(context['incident_types'].keys())[:3])}<br><br>
+            • {context['total_incidents']} total incidents in database<br>
+            • Incident types: {incident_types_text}<br>
+            • Severity breakdown: {context['severity_breakdown']['high']} high, {context['severity_breakdown']['medium']} medium, {context['severity_breakdown']['low']} low<br>
+            • Areas with activity: {', '.join(high_risk_areas) if high_risk_areas else 'check map for specific locations'}<br><br>
             
-            <strong>Safety Tips:</strong><br>
+            <strong>Safety Assessment:</strong><br>
             • Stay on well-lit main streets<br>
-            • Be extra cautious near: {', '.join(high_risk_areas) if high_risk_areas else 'check map for incident locations'}<br>
+            • Be extra cautious in areas with recent incidents<br>
             • Keep phone charged and stay alert<br>
-            • Trust your instincts about surroundings"""
+            • Trust your instincts about surroundings<br>
+            • Use the map to see specific incident locations<br>
+            • Report any suspicious activity you observe"""
         else:
-            response = """Your area shows no recent incident reports, which is positive.<br><br>
+            # No specific location mentioned and no database data
+            response = """The database shows no recent incident reports, which is positive.<br><br>
             
             <strong>General Safety Tips:</strong><br>
             • Maintain normal safety precautions<br>
@@ -896,37 +1121,230 @@ def get_clean_fallback_response(user_message, context):
             
             Continue monitoring SafetyMapper for any updates."""
     
-    elif any(word in message_lower for word in ['incident', 'crime', 'report']):
-        if context["has_local_data"]:
-            response = f"""<strong>Recent Activity Summary:</strong><br><br>
+    elif any(word in message_lower for word in ['crime', 'rate', 'statistics', 'chicago', 'san diego', 'bethesda', 'new york']):
+        # Check if asking about specific cities
+        if any(city in message_lower for city in ['chicago', 'san diego', 'new york', 'nyc']):
+            # Check if we have data for the mentioned city
+            mentioned_city = None
+            for city in ['chicago', 'san diego', 'new york', 'nyc']:
+                if city in message_lower:
+                    mentioned_city = city
+                    break
             
-            • Total incidents: {context['total_incidents']}<br>
+            # Check if we have data for this city in our database
+            city_data_found = False
+            city_incidents = []
+            if context.get('location_breakdown'):
+                for location, data in context['location_breakdown'].items():
+                    if mentioned_city in location.lower():
+                        city_data_found = True
+                        city_incidents.append((location, data))
+            
+            if city_data_found and city_incidents:
+                # We have data for this city
+                city_name = mentioned_city.title()
+                if mentioned_city == 'nyc':
+                    city_name = 'New York City'
+                
+                response = f"""<strong>📊 {city_name} Safety Data Available</strong><br><br>
+                
+                Based on our local database, here's what we found for {city_name}:<br><br>"""
+                
+                for location, data in city_incidents:
+                    types_text = ', '.join([f"{count} {type}" for type, count in data['types'].items()])
+                    response += f"""<strong>{location}:</strong><br>
+                    • {data['total']} total incidents<br>
+                    • Types: {types_text}<br>
+                    • Severity: {data['severity']['high']} high, {data['severity']['medium']} medium, {data['severity']['low']} low<br><br>"""
+                
+                response += """<strong>Safety Recommendations:</strong><br>
+                • Be aware of your surroundings in areas with recent incidents<br>
+                • Stay on well-lit, populated streets<br>
+                • Keep belongings secure and close<br>
+                • Report any suspicious activity<br><br>
+                
+                <em>Note: This is limited data from our local database. For comprehensive statistics, check official sources.</em>"""
+            else:
+                # No data for this city
+                response = f"""<strong>⚠️ Data Limitation Notice</strong><br><br>
+                
+                I have safety data for <strong>multiple areas</strong> (where I show {context['total_incidents']} recent incidents), but not specifically for the area you asked about.<br><br>
+                
+                <strong>For {', '.join([city for city in ['Chicago', 'San Diego', 'New York'] if city.lower() in message_lower])}:</strong><br>
+                • Check local police department crime statistics<br>
+                • Use city-specific safety apps and resources<br>
+                • Research neighborhood-specific safety ratings<br>
+                • Consider local community safety groups<br><br>
+                
+                <strong>General Safety Tips:</strong><br>
+                • Stay in well-lit, populated areas<br>
+                • Be aware of your surroundings<br>
+                • Trust your instincts about safety<br>
+                • Keep emergency contacts handy"""
+        elif context["has_local_data"]:
+            # Check if we have local area data vs broader data
+            locations_in_db = list(context.get('location_breakdown', {}).keys())
+            local_areas = ['bethesda', 'silver spring', 'chevy chase']
+            has_local_data = any(any(local in loc.lower() for local in local_areas) for loc in locations_in_db)
+            
+            if has_local_data:
+                area_name = "Local Crime Overview (Bethesda/Silver Spring/Chevy Chase)"
+            else:
+                area_name = "Database Crime Overview (Multiple Areas)"
+            
+            response = f"""<strong>{area_name}:</strong><br><br>
+            
+            • Recent incidents: {context['total_incidents']}<br>
             • Most common: {max(context['incident_types'], key=context['incident_types'].get) if context['incident_types'] else 'N/A'}<br>
-            • Severity: {context['severity_breakdown']['high']} high, {context['severity_breakdown']['medium']} medium, {context['severity_breakdown']['low']} low<br><br>
+            • Severity breakdown: {context['severity_breakdown']['high']} high, {context['severity_breakdown']['medium']} medium, {context['severity_breakdown']['low']} low<br>
+            • Areas: {', '.join(context['recent_locations'][:3]) if context['recent_locations'] else 'Various locations'}<br><br>
             
-            <strong>Locations:</strong> {', '.join(context['recent_locations'][:3]) if context['recent_locations'] else 'Various areas'}<br><br>
-            
-            View the map for specific incident locations and details."""
+            <strong>Safety Assessment:</strong><br>
+            • Monitor the map for specific incident locations<br>
+            • Stay alert in areas with recent activity<br>
+            • Report any suspicious activity you observe"""
         else:
-            response = """<strong>Good news!</strong> No recent incidents reported in your area.<br><br>
+            response = """<strong>Good news!</strong> No recent incidents reported in the database.<br><br>
             
             This suggests:<br>
-            • Low crime activity<br>
+            • Low crime activity in monitored areas<br>
+            • Effective community safety measures<br>
+            • Good area security<br><br>
+            
+            For comprehensive crime statistics, check your local police department's public safety reports."""
+    
+    elif any(word in message_lower for word in ['theft', 'stolen', 'robbery', 'burglary']):
+        if context["has_local_data"]:
+            theft_count = context["incident_types"].get("theft", 0)
+            
+            # Check if asking about specific location
+            location_mentioned = None
+            for location in context.get('location_breakdown', {}).keys():
+                if any(word in location.lower() for word in ['san diego', 'chicago', 'new york', 'bethesda', 'silver spring']):
+                    if any(word in message_lower for word in location.lower().split()):
+                        location_mentioned = location
+                        break
+            
+            if location_mentioned:
+                # Location-specific theft analysis
+                location_data = context['location_breakdown'][location_mentioned]
+                location_theft = location_data['types'].get('theft', 0)
+                
+                response = f"""<strong>🔓 Theft Analysis for {location_mentioned}</strong><br><br>
+                
+                Based on our local database:<br>
+                • {location_theft} theft incidents in {location_mentioned}<br>
+                • {location_data['total']} total incidents in this area<br>
+                • Theft represents {round((location_theft/location_data['total'])*100, 1)}% of incidents in this area<br><br>
+                
+                <strong>Safety Tips for {location_mentioned}:</strong><br>
+                • Be extra vigilant about belongings in this area<br>
+                • Keep valuables secure and close<br>
+                • Stay in well-lit, populated areas<br>
+                • Report any suspicious activity immediately<br>
+                • Consider using the route planner to avoid high-risk areas"""
+            else:
+                # General theft analysis
+                response = f"""<strong>🔓 Theft Analysis</strong><br><br>
+                
+                Based on our local database:<br>
+                • {theft_count} theft incidents reported across all areas<br>
+                • This represents {round((theft_count/context['total_incidents'])*100, 1)}% of all incidents<br><br>
+                
+                <strong>Safety Tips:</strong><br>
+                • Keep belongings close and secure<br>
+                • Don't leave valuables unattended<br>
+                • Be aware of your surroundings<br>
+                • Report any suspicious activity<br>
+                • Use well-lit, populated areas"""
+        else:
+            response = """<strong>🔓 Theft Prevention</strong><br><br>
+            
+            No theft incidents reported in our local area recently.<br><br>
+            
+            <strong>General Theft Prevention:</strong><br>
+            • Keep belongings close and secure<br>
+            • Don't leave valuables unattended<br>
+            • Be aware of your surroundings<br>
+            • Report any suspicious activity<br>
+            • Use well-lit, populated areas"""
+    
+    elif any(word in message_lower for word in ['incident', 'crime', 'report']):
+        if context["has_local_data"]:
+            incident_types_list = list(context['incident_types'].items())
+            incident_types_text = ', '.join([f"{count} {type}" for type, count in incident_types_list[:5]])
+            
+            # Check if we have local area data vs broader data
+            locations_in_db = list(context.get('location_breakdown', {}).keys())
+            local_areas = ['bethesda', 'silver spring', 'chevy chase']
+            has_local_data = any(any(local in loc.lower() for local in local_areas) for loc in locations_in_db)
+            
+            if has_local_data:
+                area_name = "Complete Database Summary (Bethesda/Silver Spring/Chevy Chase)"
+            else:
+                area_name = "Complete Database Summary (Multiple Areas)"
+            
+            response = f"""<strong>{area_name}:</strong><br><br>
+            
+            • Total incidents in database: {context['total_incidents']}<br>
+            • Incident breakdown: {incident_types_text}<br>
+            • Severity distribution: {context['severity_breakdown']['high']} high, {context['severity_breakdown']['medium']} medium, {context['severity_breakdown']['low']} low<br>
+            • Areas with activity: {', '.join(context['recent_locations'][:5]) if context['recent_locations'] else 'Various areas'}<br><br>
+            
+            <strong>What you can do:</strong><br>
+            • View the map for specific incident locations<br>
+            • Report any suspicious activity you observe<br>
+            • Stay alert in areas with recent incidents<br>
+            • Help keep our community safe by being vigilant<br>
+            • Use the route planner to avoid high-risk areas"""
+        else:
+            response = """<strong>Good news!</strong> No incidents reported in the database.<br><br>
+            
+            This suggests:<br>
+            • Low crime activity in monitored areas<br>
             • Effective community safety measures<br>
             • Good area security<br><br>
             
             Continue normal safety precautions and report any concerns you may have."""
     
     else:
-        response = f"""I'm here to help with safety questions about your area.<br><br>
+        # Check if we have local area data vs broader data
+        locations_in_db = list(context.get('location_breakdown', {}).keys())
+        local_areas = ['bethesda', 'silver spring', 'chevy chase']
+        has_local_data = any(any(local in loc.lower() for local in local_areas) for loc in locations_in_db)
+        
+        if has_local_data:
+            area_name = "Bethesda/Silver Spring/Chevy Chase area"
+            example_questions = [
+                "Is it safe to walk at night?",
+                "What recent incidents happened?",
+                "Any safety concerns in my area?",
+                "How safe is downtown?",
+                "What's the crime rate in Bethesda?",
+                "Is it safe to go shopping in Silver Spring?"
+            ]
+        else:
+            area_name = "multiple areas in our database"
+            example_questions = [
+                "Is it safe to walk at night?",
+                "What recent incidents happened?",
+                "Any safety concerns in my area?",
+                "How safe is downtown?",
+                "What's the crime rate in Chicago?",
+                "Are there thefts in San Diego?"
+            ]
+        
+        response = f"""I'm here to help with safety questions about the {area_name}.<br><br>
         
         <strong>Try asking:</strong><br>
-        • "Is it safe to walk at night?"<br>
-        • "What recent incidents happened?"<br>
-        • "Any safety concerns in my area?"<br>
-        • "How safe is downtown?"<br><br>
+        • "{example_questions[0]}"<br>
+        • "{example_questions[1]}"<br>
+        • "{example_questions[2]}"<br>
+        • "{example_questions[3]}"<br>
+        • "{example_questions[4]}"<br>
+        • "{example_questions[5]}"<br><br>
         
-        I'll provide helpful information based on {context['total_incidents'] if context['has_local_data'] else 'available'} local safety data."""
+        <strong>Note:</strong> I have data for {context['total_incidents'] if context['has_local_data'] else '0'} recent incidents in the {area_name}. For other cities, I can provide general safety advice."""
     
     return header + response
 
@@ -1090,6 +1508,19 @@ def home():
             background: rgba(102, 126, 234, 0.1);
             color: #667eea;
             border: 1px solid #667eea;
+        }
+
+        .route-info {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .route-icon {
+            background: linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%);
         }
 
         /* Enhanced Chat Interface Styles */
@@ -1612,6 +2043,40 @@ def home():
             color: white;
         }
         
+        .control-btn.clear-btn {
+            background: #dc2626;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .control-btn.clear-btn:hover {
+            background: #b91c1c;
+        }
+
+        #photoPreview {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        #previewImage {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #removePhoto {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #removePhoto:hover {
+            background: #5a6268;
+        }
+        
         .success-message {
             background: linear-gradient(45deg, #4CAF50 0%, #45a049 100%);
             color: white;
@@ -1738,6 +2203,7 @@ def home():
                     <button class="control-btn" id="heatmapView" onclick="toggleView('heatmap')">🔥 Heatmap</button>
                     <button class="control-btn" id="safetyView" onclick="toggleView('safety')">🚔 Safety Resources</button>
                     <button class="control-btn" id="allView" onclick="toggleView('all')">🌟 All Data</button>
+                    <button class="control-btn clear-btn" id="clearRoute" onclick="clearRoute()" style="display: none;">🧹 Clear Route</button>
                 </div>
                 <div id="map"></div>
                 <div class="legend">
@@ -1798,6 +2264,14 @@ def home():
                                 <option value="high">High</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label for="photoUpload">Photo (Optional)</label>
+                            <input type="file" id="photoUpload" class="form-control" accept="image/*" style="padding: 8px;">
+                            <div id="photoPreview" style="display: none; margin-top: 10px;">
+                                <img id="previewImage" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                <button type="button" id="removePhoto" class="btn btn-secondary" style="margin-top: 5px; font-size: 0.8rem;">Remove Photo</button>
+                            </div>
+                        </div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Report Incident</button>
                     </form>
                     <div id="successMessage" style="display: none;"></div>
@@ -1814,6 +2288,41 @@ def home():
                         </div>
                     </div>
                 </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-icon route-icon">🛤️</div>
+                        <span>Route Planner</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="routeFrom">From</label>
+                        <input type="text" id="routeFrom" class="form-control" placeholder="Your location">
+                    </div>
+                    <div class="form-group">
+                        <label for="routeTo">To</label>
+                        <input type="text" id="routeTo" class="form-control" placeholder="Destination">
+                    </div>
+                    <div class="form-group">
+                        <label for="travelMode">Travel Mode</label>
+                        <select id="travelMode" class="form-control">
+                            <option value="DRIVING">🚗 Driving</option>
+                            <option value="WALKING" selected>🚶 Walking</option>
+                            <option value="TRANSIT">🚌 Public Transit</option>
+                            <option value="BICYCLING">🚲 Bicycling</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="planSafeRoute()">Plan Safe Route</button>
+                    <div id="routeInfo" class="route-info">
+                        <div style="font-weight: 500; margin-bottom: 0.5rem;">Route Safety Analysis</div>
+                        <div style="font-size: 0.9rem; color: #718096;">
+                            <div>🛡️ Safety Score: <span id="routeSafetyScore">N/A</span></div>
+                            <div>⏱️ Duration: <span id="routeDuration">N/A</span></div>
+                            <div>📏 Distance: <span id="routeDistance">N/A</span></div>
+                            <div>🚗 Travel Mode: <span id="routeTravelMode">N/A</span></div>
+                            <div>📍 Safe Points: <span id="safePoints">N/A</span></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1822,12 +2331,19 @@ def home():
         let map;
         let markers = [];
         let safetyMarkers = [];
+        let routePolylines = [];
         let heatmap;
+        let directionsService;
+        let directionsRenderer;
         let currentView = 'incidents';
         let selectedIncidentType = '';
         let selectedLocation = null;
+        let autocompleteObjects = {};
+        let currentRoute = null;
+        let currentRouteSegments = null;
         let chatHistory = [];
         let isChatOpen = false;
+        let selectedPhoto = null;
 
         // Load incidents from backend
         const incidents = {{ incidents|tojson }};
@@ -2018,7 +2534,7 @@ def home():
         }
 
         function initMap() {
-            console.log('🗺️ SafetyMapper initialized');
+            console.log('🗺️ SafetyMapper with Firestore + AI initialized');
             
             try {
                 map = new google.maps.Map(document.getElementById('map'), {
@@ -2038,6 +2554,12 @@ def home():
                     ]
                 });
 
+                directionsService = new google.maps.DirectionsService();
+                directionsRenderer = new google.maps.DirectionsRenderer({
+                    draggable: true
+                });
+                directionsRenderer.setMap(map);
+
                 map.addListener('click', function(event) {
                     selectLocation(event.latLng);
                 });
@@ -2048,10 +2570,11 @@ def home():
                     }
                 });
 
+                initializeAutocomplete();
                 showIncidents();
                 updateRecentIncidentsList();
                 
-                console.log('🎉 SafetyMapper ready!')
+                console.log('🎉 SafetyMapper with AI ready!')
 
             } catch (error) {
                 console.error('❌ SafetyMapper initialization failed:', error);
@@ -2188,6 +2711,178 @@ def home():
             }
         }
 
+        function clearRoutePolylines() {
+            routePolylines.forEach(polyline => polyline.setMap(null));
+            routePolylines = [];
+        }
+
+        function initializeAutocomplete() {
+            const inputs = ['location', 'routeFrom', 'routeTo'];
+            
+            inputs.forEach(inputId => {
+                try {
+                    const input = document.getElementById(inputId);
+                    if (input) {
+                        const autocomplete = new google.maps.places.Autocomplete(input, {
+                            componentRestrictions: {country: 'us'},
+                            fields: ['place_id', 'formatted_address', 'geometry', 'name']
+                        });
+                        
+                        autocompleteObjects[inputId] = autocomplete;
+                        
+                        autocomplete.addListener('place_changed', function() {
+                            const place = autocomplete.getPlace();
+                            if (place.geometry && inputId === 'location') {
+                                selectedLocation = place.geometry.location;
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error(`❌ Failed to setup autocomplete for ${inputId}:`, error);
+                }
+            });
+        }
+
+        async function planSafeRoute() {
+            const from = document.getElementById('routeFrom').value;
+            const to = document.getElementById('routeTo').value;
+            const travelMode = document.getElementById('travelMode').value;
+            
+            if (!from || !to) {
+                alert('Please enter both start and end locations');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        origin: from, 
+                        destination: to,
+                        travel_mode: travelMode
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentRoute = data;
+                    currentRouteSegments = data.route_segments;
+                    
+                    showRoute();
+                    
+                    document.getElementById('routeSafetyScore').textContent = data.safety_score;
+                    document.getElementById('routeDuration').textContent = data.duration;
+                    document.getElementById('routeDistance').textContent = data.distance;
+                    document.getElementById('routeTravelMode').textContent = getTravelModeText(data.travel_mode);
+                    document.getElementById('safePoints').textContent = data.safe_points;
+                    document.getElementById('routeInfo').style.display = 'block';
+                    
+                    document.getElementById('clearRoute').style.display = 'block';
+                    
+                    console.log('✅ Route planned successfully');
+                } else {
+                    alert('Error planning route: ' + data.error);
+                }
+            } catch (error) {
+                console.error('❌ Network error:', error);
+                alert('Network error. Please try again.');
+            }
+        }
+
+        function showRoute() {
+            clearRoutePolylines();
+            
+            if (currentRouteSegments && currentRouteSegments.length > 0) {
+                displayRouteWithIncidents(currentRouteSegments);
+            }
+        }
+
+        function displayRouteWithIncidents(routeSegments) {
+            routeSegments.forEach(segment => {
+                const pathCoordinates = google.maps.geometry.encoding.decodePath(segment.encoded_path);
+                
+                let strokeColor, strokeWeight;
+                
+                switch(segment.safety_level) {
+                    case 'high_risk':
+                        strokeColor = '#dc2626';
+                        strokeWeight = 8;
+                        break;
+                    case 'medium_risk':
+                        strokeColor = '#ea580c';
+                        strokeWeight = 6;
+                        break;
+                    case 'low_risk':
+                        strokeColor = '#65a30d';
+                        strokeWeight = 4;
+                        break;
+                    default:
+                        strokeColor = '#2563eb';
+                        strokeWeight = 4;
+                }
+                
+                const routePolyline = new google.maps.Polyline({
+                    path: pathCoordinates,
+                    geodesic: true,
+                    strokeColor: strokeColor,
+                    strokeOpacity: 0.8,
+                    strokeWeight: strokeWeight
+                });
+                
+                routePolyline.setMap(map);
+                routePolylines.push(routePolyline);
+                
+                routePolyline.addListener('click', (event) => {
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div style="padding: 8px;">
+                                <h4 style="margin: 0 0 5px 0;">Route Segment</h4>
+                                <p style="margin: 2px 0; font-size: 0.9em;">
+                                    <strong>Safety Level:</strong> ${segment.safety_level.replace('_', ' ').toUpperCase()}<br>
+                                    <strong>Incidents Nearby:</strong> ${segment.incident_count}<br>
+                                    <strong>Distance:</strong> ${segment.distance}
+                                </p>
+                            </div>
+                        `,
+                        position: event.latLng
+                    });
+                    infoWindow.open(map);
+                });
+            });
+            
+            if (routeSegments.length > 0) {
+                const bounds = new google.maps.LatLngBounds();
+                routeSegments.forEach(segment => {
+                    const path = google.maps.geometry.encoding.decodePath(segment.encoded_path);
+                    path.forEach(point => bounds.extend(point));
+                });
+                map.fitBounds(bounds);
+            }
+        }
+
+        function getTravelModeText(mode) {
+            const modeTexts = {
+                'DRIVING': '🚗 Driving',
+                'WALKING': '🚶 Walking',
+                'TRANSIT': '🚌 Public Transit',
+                'BICYCLING': '🚲 Bicycling'
+            };
+            return modeTexts[mode] || mode;
+        }
+
+        function clearRoute() {
+            currentRoute = null;
+            currentRouteSegments = null;
+            clearRoutePolylines();
+            document.getElementById('routeInfo').style.display = 'none';
+            document.getElementById('clearRoute').style.display = 'none';
+            
+            document.getElementById('routeFrom').value = '';
+            document.getElementById('routeTo').value = '';
+        }
+
         function showIncidents() {
             clearMarkers();
             
@@ -2211,11 +2906,18 @@ def home():
                     }
                 });
 
+                const photoContent = incident.has_photo && incident.photo_data ? 
+                    `<div style="margin: 10px 0;">
+                        <img src="${incident.photo_data}" style="max-width: 100%; max-height: 150px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" alt="Incident photo">
+                        <div style="font-size: 0.8em; color: #666; margin-top: 5px;">📸 Photo attached</div>
+                    </div>` : '';
+
                 const infoWindow = new google.maps.InfoWindow({
                     content: `
                         <div style="padding: 10px; min-width: 200px;">
                             <h3 style="margin: 0 0 10px 0; color: #333;">${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}</h3>
                             <p style="margin: 5px 0; color: #666;">${incident.description}</p>
+                            ${photoContent}
                             <p style="margin: 5px 0; font-size: 0.9em; color: #888;">
                                 <strong>Location:</strong> ${incident.location}<br>
                                 <strong>Severity:</strong> ${incident.severity}<br>
@@ -2298,6 +3000,7 @@ def home():
             
             clearMarkers();
             clearSafetyMarkers();
+            clearRoutePolylines();
             
             switch(view) {
                 case 'incidents':
@@ -2315,17 +3018,24 @@ def home():
                     loadSafetyResources();
                     break;
             }
+            
+            if (currentRoute && currentRouteSegments) {
+                showRoute();
+            }
         }
 
         function updateRecentIncidentsList() {
             const recentList = document.getElementById('recentIncidentsList');
-            recentList.innerHTML = incidents.slice(0, 5).map(incident => `
-                <div class="incident-item" onclick="highlightIncident('${incident.id}')">
-                    <div class="incident-title">${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}</div>
-                    <div class="incident-details">${incident.location} • ${incident.timestamp}</div>
-                    <div class="incident-source">📊 ${incident.source}</div>
-                </div>
-            `).join('');
+            recentList.innerHTML = incidents.slice(0, 5).map(incident => {
+                const photoIndicator = incident.has_photo ? '📸 ' : '';
+                return `
+                    <div class="incident-item" onclick="highlightIncident('${incident.id}')">
+                        <div class="incident-title">${photoIndicator}${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}</div>
+                        <div class="incident-details">${incident.location} • ${incident.timestamp}</div>
+                        <div class="incident-source">📊 ${incident.source}</div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function highlightIncident(incidentId) {
@@ -2368,6 +3078,69 @@ def home():
                 });
             });
 
+            // Photo upload handling
+            document.getElementById('photoUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                        alert('Photo size must be less than 2MB');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Compress image if it's too large
+                        const img = new Image();
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            
+                            // Calculate new dimensions (max 800px width/height)
+                            let { width, height } = img;
+                            const maxSize = 800;
+                            
+                            if (width > height) {
+                                if (width > maxSize) {
+                                    height = (height * maxSize) / width;
+                                    width = maxSize;
+                                }
+                            } else {
+                                if (height > maxSize) {
+                                    width = (width * maxSize) / height;
+                                    height = maxSize;
+                                }
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            
+                            // Draw and compress
+                            ctx.drawImage(img, 0, 0, width, height);
+                            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                            
+                            selectedPhoto = {
+                                data: compressedDataUrl,
+                                filename: file.name,
+                                size: compressedDataUrl.length,
+                                type: 'image/jpeg'
+                            };
+                            
+                            document.getElementById('previewImage').src = compressedDataUrl;
+                            document.getElementById('photoPreview').style.display = 'block';
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            document.getElementById('removePhoto').addEventListener('click', function() {
+                selectedPhoto = null;
+                document.getElementById('photoUpload').value = '';
+                document.getElementById('photoPreview').style.display = 'none';
+            });
+
             document.getElementById('incidentForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
@@ -2389,8 +3162,18 @@ def home():
                     type: selectedIncidentType,
                     location: location,
                     description: description,
-                    severity: severity
+                    severity: severity,
+                    has_photo: selectedPhoto !== null,
+                    photo_data: selectedPhoto ? selectedPhoto.data : null,
+                    photo_filename: selectedPhoto ? selectedPhoto.filename : null,
+                    photo_size: selectedPhoto ? selectedPhoto.size : null
                 };
+                
+                // Show loading state
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Saving...';
+                submitBtn.disabled = true;
                 
                 try {
                     const response = await fetch('/api/incidents', {
@@ -2407,9 +3190,10 @@ def home():
                         incidents.unshift(data);
                         
                         const successDiv = document.getElementById('successMessage');
+                        const photoMessage = selectedPhoto ? ' (with photo)' : '';
                         successDiv.innerHTML = `
                             <div class="success-message">
-                                ✅ Incident reported successfully! Thank you for helping keep our community safe.
+                                ✅ Incident reported successfully${photoMessage}! Thank you for helping keep our community safe.
                             </div>
                         `;
                         successDiv.style.display = 'block';
@@ -2417,7 +3201,9 @@ def home():
                         this.reset();
                         selectedIncidentType = '';
                         selectedLocation = null;
+                        selectedPhoto = null;
                         document.querySelectorAll('.incident-type').forEach(t => t.classList.remove('selected'));
+                        document.getElementById('photoPreview').style.display = 'none';
                         
                         if (currentView === 'incidents') {
                             showIncidents();
@@ -2430,11 +3216,19 @@ def home():
                         }, 5000);
                     } else {
                         console.error('❌ Error saving:', data.error);
-                        alert('Error: ' + data.error);
+                        let errorMessage = 'Error: ' + data.error;
+                        if (data.error && data.error.includes('Photo too large')) {
+                            errorMessage = 'Photo was too large and was removed. Incident saved without photo.';
+                        }
+                        alert(errorMessage);
                     }
                 } catch (error) {
                     console.error('❌ Network error:', error);
                     alert('Network error. Please try again.');
+                } finally {
+                    // Restore button state
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
                 }
             });
         });
@@ -2507,7 +3301,7 @@ Together, we can make our neighborhoods safer! 🌟`);
 
 @app.route('/api/ai-chat', methods=['POST'])
 def ai_chat():
-    """Enhanced AI Safety Assistant with Vertex AI multi-layered safety"""
+    """Enhanced AI Safety Assistant with proper flow: Vertex AI → Database → Gemini → Fallback"""
     try:
         data = request.json
         user_message = data.get('message', '').strip()
@@ -2515,22 +3309,22 @@ def ai_chat():
         if not user_message:
             return jsonify({"error": "Message is required"}), 400
         
-        # Multi-layered safety check using Vertex AI
+        # STEP 1: Vertex AI Safety moderation check FIRST
         moderation_result = content_moderator.check_content(user_message)
         
         if moderation_result['blocked']:
-            # Log the moderation action with risk assessment
+            # Log the moderation action
             log_vertex_ai_moderation_action(moderation_result, request.remote_addr)
             
-            # Return contextual response based on specific safety violations
+            # Return blocked content response
             filtered_response = get_vertex_ai_filtered_response(moderation_result)
             return jsonify({"response": filtered_response})
         
-        # Content passed all safety layers - proceed with AI processing
-        recent_incidents = incident_manager.get_recent_incidents(limit=20, hours=24*7)
-        context = create_safety_context(recent_incidents)
+        # STEP 2: Check database for ANY location mentioned
+        all_incidents = incident_manager.get_recent_incidents(limit=1000, hours=24*30)  # 30 days
+        context = create_safety_context(all_incidents)
         
-        # Try Gemini AI with safety settings
+        # STEP 3: Try Gemini AI for intelligent response (handles both local and general)
         try:
             if GEMINI_API_KEY != "YOUR_GEMINI_API_KEY_HERE":
                 response = get_enhanced_gemini_response(user_message, context)
@@ -2539,7 +3333,7 @@ def ai_chat():
         except Exception as e:
             log_step(f"❌ Gemini failed: {e}")
         
-        # Fallback response
+        # STEP 4: Fallback response if Gemini fails
         response = get_clean_fallback_response(user_message, context)
         log_successful_vertex_ai_interaction(user_message, "fallback", moderation_result)
         return jsonify({"response": response})
@@ -2656,20 +3450,308 @@ def create_incident():
             "description": data['description'],
             "severity": data['severity'],
             "ip_address": request.remote_addr,
-            "user_agent": request.headers.get('User-Agent', '')
+            "user_agent": request.headers.get('User-Agent', ''),
+            "has_photo": data.get('has_photo', False),
+            "photo_data": data.get('photo_data'),
+            "photo_filename": data.get('photo_filename')
         }
         
         # Store in Firestore
-        stored_incident = incident_manager.store_incident(incident_data)
-        
-        if stored_incident:
-            return jsonify(stored_incident), 201
-        else:
-            return jsonify({"error": "Failed to store incident"}), 500
+        try:
+            stored_incident = incident_manager.store_incident(incident_data)
+            
+            if stored_incident:
+                return jsonify(stored_incident), 201
+            else:
+                return jsonify({"error": "Failed to store incident"}), 500
+        except Exception as store_error:
+            log_step(f"❌ Firestore storage error: {str(store_error)}")
+            return jsonify({"error": f"Storage error: {str(store_error)}"}), 500
             
     except Exception as e:
         log_step(f"❌ Error processing incident report: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/route', methods=['POST'])
+def plan_route():
+    """Plan a safe route using incidents from Firestore"""
+    try:
+        data = request.json
+        origin = data.get('origin')
+        destination = data.get('destination')
+        travel_mode = data.get('travel_mode', 'WALKING')
+        
+        if not origin or not destination:
+            return jsonify({"error": "Origin and destination are required"}), 400
+        
+        # Get geocoded locations
+        from_geocode = gmaps.geocode(origin)
+        to_geocode = gmaps.geocode(destination)
+        
+        if not from_geocode or not to_geocode:
+            return jsonify({"error": "Could not geocode locations"}), 400
+        
+        from_location = from_geocode[0]['geometry']['location']
+        to_location = to_geocode[0]['geometry']['location']
+        
+        # Calculate route
+        mode_mapping = {
+            'DRIVING': 'driving',
+            'WALKING': 'walking', 
+            'TRANSIT': 'transit',
+            'BICYCLING': 'bicycling'
+        }
+        
+        google_mode = mode_mapping.get(travel_mode, 'walking')
+        
+        route_params = {
+            'origin': from_location,
+            'destination': to_location,
+            'mode': google_mode
+        }
+        
+        if travel_mode == 'DRIVING':
+            route_params['avoid'] = ["tolls"]
+        elif travel_mode in ['WALKING', 'BICYCLING']:
+            route_params['avoid'] = ["highways", "tolls"]
+        elif travel_mode == 'TRANSIT':
+            route_params['departure_time'] = datetime.now()
+        
+        directions_result = gmaps.directions(**route_params)
+        
+        if not directions_result:
+            return jsonify({"error": f"No {travel_mode.lower()} route found"}), 400
+        
+        route = directions_result[0]
+        leg = route['legs'][0]
+        duration = leg['duration']['text']
+        distance = leg['distance']['text']
+        
+        # Get all incidents from Firestore for route analysis
+        all_incidents = incident_manager.get_all_incidents()
+        
+        # Analyze route segments against Firestore incidents
+        route_segments = analyze_route_segments(route, all_incidents)
+        
+        # Find safety resources
+        midpoint_lat = (from_location['lat'] + to_location['lat']) / 2
+        midpoint_lng = (from_location['lng'] + to_location['lng']) / 2
+        search_radius = get_search_radius_by_mode(travel_mode)
+        
+        police_result = gmaps.places_nearby(
+            location=(midpoint_lat, midpoint_lng),
+            radius=search_radius,
+            type='police'
+        )
+        police_stations = police_result.get('results', [])
+        
+        hospital_result = gmaps.places_nearby(
+            location=(midpoint_lat, midpoint_lng),
+            radius=search_radius,
+            type='hospital'
+        )
+        hospitals = hospital_result.get('results', [])
+        
+        gas_stations = []
+        if travel_mode == 'DRIVING':
+            gas_result = gmaps.places_nearby(
+                location=(midpoint_lat, midpoint_lng),
+                radius=search_radius,
+                type='gas_station'
+            )
+            gas_stations = gas_result.get('results', [])
+        
+        # Calculate safety score
+        safety_score = calculate_safety_score_by_mode(
+            police_stations, hospitals, gas_stations, distance, travel_mode
+        )
+        
+        # Prepare response
+        safe_points_text = f"{len(police_stations)} police stations, {len(hospitals)} hospitals"
+        if gas_stations:
+            safe_points_text += f", {len(gas_stations)} gas stations"
+        
+        route_info = {
+            'safety_score': f"{safety_score}/10",
+            'duration': duration,
+            'distance': distance,
+            'travel_mode': travel_mode,
+            'safe_points': safe_points_text,
+            'route_segments': route_segments,
+            'incidents_analyzed': len(all_incidents)
+        }
+        
+        return jsonify(route_info)
+        
+    except Exception as e:
+        log_step(f"❌ Route planning failed: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/test-photo', methods=['POST'])
+def test_photo_upload():
+    """Test endpoint for photo upload functionality"""
+    try:
+        data = request.json
+        has_photo = data.get('has_photo', False)
+        photo_size = len(data.get('photo_data', '')) if data.get('photo_data') else 0
+        
+        return jsonify({
+            "status": "success",
+            "has_photo": has_photo,
+            "photo_size": photo_size,
+            "message": "Photo upload test successful"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def analyze_route_segments(route, incidents):
+    """Analyze route segments using incidents from Firestore"""
+    route_segments = []
+    steps = route['legs'][0]['steps']
+    
+    for i, step in enumerate(steps):
+        start_lat = step['start_location']['lat']
+        start_lng = step['start_location']['lng']
+        end_lat = step['end_location']['lat']
+        end_lng = step['end_location']['lng']
+        
+        incidents_near_segment = count_incidents_near_route_segment(
+            start_lat, start_lng, end_lat, end_lng, incidents, radius_miles=0.5
+        )
+        
+        severe_incidents = count_severe_incidents_near_segment(
+            start_lat, start_lng, end_lat, end_lng, incidents, radius_miles=0.3
+        )
+        
+        if severe_incidents > 0 or incidents_near_segment >= 3:
+            safety_level = 'high_risk'
+        elif incidents_near_segment >= 1:
+            safety_level = 'medium_risk'
+        else:
+            safety_level = 'safe'
+        
+        segment = {
+            'segment_id': i,
+            'encoded_path': step['polyline']['points'],
+            'distance': step['distance']['text'],
+            'duration': step['duration']['text'],
+            'incident_count': incidents_near_segment,
+            'severe_incidents': severe_incidents,
+            'safety_level': safety_level
+        }
+        
+        route_segments.append(segment)
+    
+    return route_segments
+
+def count_incidents_near_route_segment(start_lat, start_lng, end_lat, end_lng, incidents, radius_miles=0.5):
+    """Count incidents near a route segment"""
+    count = 0
+    
+    for incident in incidents:
+        incident_lat = incident.get('lat')
+        incident_lng = incident.get('lng')
+        
+        if incident_lat and incident_lng:
+            start_distance = calculate_distance(start_lat, start_lng, incident_lat, incident_lng)
+            end_distance = calculate_distance(end_lat, end_lng, incident_lat, incident_lng)
+            
+            if start_distance <= radius_miles or end_distance <= radius_miles:
+                count += 1
+    
+    return count
+
+def count_severe_incidents_near_segment(start_lat, start_lng, end_lat, end_lng, incidents, radius_miles=0.3):
+    """Count severe incidents near a route segment"""
+    count = 0
+    
+    for incident in incidents:
+        if incident.get('severity') == 'high':
+            incident_lat = incident.get('lat')
+            incident_lng = incident.get('lng')
+            
+            if incident_lat and incident_lng:
+                start_distance = calculate_distance(start_lat, start_lng, incident_lat, incident_lng)
+                end_distance = calculate_distance(end_lat, end_lng, incident_lat, incident_lng)
+                
+                if start_distance <= radius_miles or end_distance <= radius_miles:
+                    count += 1
+    
+    return count
+
+def calculate_distance(lat1, lng1, lat2, lng2):
+    """Calculate distance between two points in miles"""
+    import math
+    
+    lat_diff = abs(lat1 - lat2)
+    lng_diff = abs(lng1 - lng2)
+    
+    distance = math.sqrt((lat_diff * 69) ** 2 + (lng_diff * 54.6) ** 2)
+    return distance
+
+def get_search_radius_by_mode(travel_mode):
+    """Get search radius based on travel mode"""
+    radius_mapping = {
+        'DRIVING': 5000,
+        'WALKING': 1000,
+        'TRANSIT': 2000,
+        'BICYCLING': 2000
+    }
+    return radius_mapping.get(travel_mode, 2000)
+
+def calculate_safety_score_by_mode(police_stations, hospitals, gas_stations, distance, travel_mode):
+    """Calculate safety score based on travel mode"""
+    base_scores = {
+        'DRIVING': 6.0,
+        'WALKING': 4.0,
+        'TRANSIT': 5.0,
+        'BICYCLING': 4.5
+    }
+    
+    base_score = base_scores.get(travel_mode, 5.0)
+    
+    if travel_mode == 'DRIVING':
+        police_bonus = min(len(police_stations) * 0.3, 1.5)
+        hospital_bonus = min(len(hospitals) * 0.2, 1.0)
+        gas_bonus = min(len(gas_stations) * 0.2, 1.0)
+    elif travel_mode == 'WALKING':
+        police_bonus = min(len(police_stations) * 0.7, 3.0)
+        hospital_bonus = min(len(hospitals) * 0.5, 2.0)
+        gas_bonus = 0
+    elif travel_mode == 'TRANSIT':
+        police_bonus = min(len(police_stations) * 0.5, 2.0)
+        hospital_bonus = min(len(hospitals) * 0.3, 1.5)
+        gas_bonus = 0
+    else:  # BICYCLING
+        police_bonus = min(len(police_stations) * 0.6, 2.5)
+        hospital_bonus = min(len(hospitals) * 0.4, 1.5)
+        gas_bonus = 0
+    
+    try:
+        distance_value = float(distance.split()[0])
+        distance_unit = distance.split()[1] if len(distance.split()) > 1 else 'mi'
+        
+        if distance_unit.lower().startswith('km'):
+            distance_miles = distance_value * 0.621371
+        else:
+            distance_miles = distance_value
+        
+        if travel_mode == 'DRIVING':
+            distance_penalty = min(distance_miles / 20.0, 1.0)
+        elif travel_mode == 'WALKING':
+            distance_penalty = min(distance_miles / 2.0, 2.0)
+        elif travel_mode == 'TRANSIT':
+            distance_penalty = min(distance_miles / 10.0, 1.5)
+        else:  # BICYCLING
+            distance_penalty = min(distance_miles / 5.0, 1.5)
+            
+    except:
+        distance_penalty = 0.5
+    
+    final_score = base_score + police_bonus + hospital_bonus + gas_bonus - distance_penalty
+    final_score = max(min(final_score, 10.0), 1.0)
+    
+    return round(final_score, 1)
 
 # ============================================================================
 # LOGGING FUNCTIONS
@@ -2814,6 +3896,7 @@ if __name__ == '__main__':
     print()
     print("📊 COMPLETE FEATURES:")
     print("  ✅ Real-time incident reporting with Firestore")
+    print("  ✅ Photo upload support for incident reports")
     print("  ✅ Advanced AI chat with Google Gemini Pro")
     print("  ✅ Multi-layered content filtering with Vertex AI Safety")
     print("  ✅ Interactive mapping with Google Maps")
@@ -2823,6 +3906,9 @@ if __name__ == '__main__':
     print("  ✅ Professional floating chat with content moderation")
     print("  ✅ Analytics and interaction logging")
     print("  ✅ Mobile-responsive design")
+    print("  ✅ Safe route planning with autocomplete")
+    print("  ✅ Route safety analysis with incident data")
+    print("  ✅ Multi-modal route planning (Driving/Walking/Transit/Bicycling)")
     print()
     print("🛡️ SECURITY FEATURES:")
     print("  ✅ Vertex AI Safety content moderation")
@@ -2835,6 +3921,8 @@ if __name__ == '__main__':
     print("  🚫 Test filtering with: 'I want to hurt someone'")
     print("  📍 Test mapping by clicking on the map")
     print("  📝 Test reporting by filling out the incident form")
+    print("  📸 Test photo upload with incident reports")
+    print("  🛤️ Test route planning with: 'Bethesda, MD' to 'Silver Spring, MD'")
     print()
     print("📝 SETUP REMINDER:")
     print("  🔑 Update your API keys in the configuration section")
