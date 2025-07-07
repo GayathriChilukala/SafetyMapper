@@ -234,36 +234,9 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ## 🚀 Deployment
 
-### Google Cloud App Engine
-```bash
-# Deploy to App Engine
-gcloud app deploy app.yaml
-```
-
 **Current Deployment**: Successfully deployed at [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
 
 **Deployment Status**: ✅ Live and operational
-
-### Local Development
-```bash
-# Run with debug mode
-python main.py
-
-# Run with production settings
-export FLASK_ENV=production
-python main.py
-```
-
-### Docker Deployment
-```dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 8000
-CMD ["python", "main.py"]
-```
 
 ## 📊 Data Schema
 
@@ -363,17 +336,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Demo Videos
 *[Add demo videos here to show application functionality]*
 
-**Recommended demo content:**
-- Complete incident reporting workflow
-- AI Safety Assistant interactions
-- Route planning and safety analysis
-- Mobile usage demonstration
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/safetymapper/issues)
-- **Documentation**: [Wiki](https://github.com/yourusername/safetymapper/wiki)
-- **Email**: support@safetymapper.com
 
 ## 🔄 Version History
 
@@ -387,7 +349,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ for safer communities**
 
-## 🚀 Deployment
-
-### Google Cloud App Engine
 ```
