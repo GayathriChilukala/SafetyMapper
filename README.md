@@ -2,6 +2,8 @@
 
 A comprehensive community safety platform that combines real-time incident reporting, AI-powered safety analysis, interactive mapping, and intelligent route planning to help communities stay safe.
 
+🌐 **Live Demo**: [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
+
 ![SafetyMapper](https://img.shields.io/badge/SafetyMapper-Community%20Safety%20Platform-blue)
 ![Python](https://img.shields.io/badge/Python-3.9+-green)
 ![Flask](https://img.shields.io/badge/Flask-2.3.3-red)
@@ -89,7 +91,8 @@ A comprehensive community safety platform that combines real-time incident repor
    ```
 
 6. **Access the application**
-   - Open your browser and go to `http://localhost:8000`
+   - **Local**: Open your browser and go to `http://localhost:8000`
+   - **Live Demo**: Visit [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
    - The application will automatically initialize sample data if the database is empty
 
 ## 🏗️ Architecture
@@ -237,6 +240,10 @@ GEMINI_API_KEY=your_gemini_api_key
 gcloud app deploy app.yaml
 ```
 
+**Current Deployment**: Successfully deployed at [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
+
+**Deployment Status**: ✅ Live and operational
+
 ### Local Development
 ```bash
 # Run with debug mode
@@ -326,6 +333,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Application Screenshots
 *[Add screenshots here to showcase the application interface]*
+
+**Live Application**: [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
 
 **Recommended screenshots to include:**
 - Main dashboard with incident map
