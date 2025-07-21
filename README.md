@@ -4,6 +4,8 @@ A comprehensive community safety platform that combines real-time incident repor
 
 🌐 **Live Demo**: [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
 
+> ⚠️ **Deployment Notice**: The live demo may become temporarily inaccessible as our Google Cloud Platform subscription is ending soon. Apologize for any inconvenience. The complete source code is available for local deployment, and we're working on securing funding for continued hosting. Please see the [Quick Start](#-quick-start) section for local installation instructions.
+
 ![SafetyMapper](https://img.shields.io/badge/SafetyMapper-Community%20Safety%20Platform-blue)
 ![Python](https://img.shields.io/badge/Python-3.9+-green)
 ![Flask](https://img.shields.io/badge/Flask-2.3.3-red)
@@ -92,8 +94,47 @@ A comprehensive community safety platform that combines real-time incident repor
 
 6. **Access the application**
    - **Local**: Open your browser and go to `http://localhost:8000`
-   - **Live Demo**: Visit [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
+   - **Live Demo**: Visit [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/) *(may be temporarily unavailable)*
    - The application will automatically initialize sample data if the database is empty
+
+## 🔮 Future Development Roadmap
+
+### 🎯 **Phase 1: Core Enhancements** (3 Months)
+- **📍 Location-Based Filtering**: GPS-powered incident filtering with customizable radius
+- **🏠 Local vs Tourist Verification**: Enhanced data quality through user type detection
+- **📱 Native Mobile App**: iOS and Android applications with offline capabilities
+- **🔮 Predictive Analytics**: ML models for incident hotspot prediction
+- **🗣️ Voice Commands**: "Hey SafetyMapper, is downtown safe right now?"
+
+### 🚀 **Phase 2: Community Features** (6 Months)
+- **🚨 Real-Time Alert System**: Push notifications for nearby incidents
+- **👥 Community Verification**: User-driven incident validation
+- **🏛️ Official Data Integration**: Police department API feeds
+- **🌐 IoT Smart City**: Integration with city cameras and sensors
+- **🤝 Safety Buddy System**: Paired travel for enhanced security
+
+### 🌟 **Phase 3: Advanced Features** (12 Months)
+- **🥽 AR/VR Features**: Augmented reality safety overlay
+- **🛡️ Blockchain Security**: Immutable incident record keeping
+- **🏢 Enterprise Dashboard**: Government and corporate deployment
+- **🌍 Global Expansion**: Multi-language and cultural support
+- **🤖 Advanced AI**: Computer vision incident detection
+
+### 📊 **Planned API Expansions**
+From current **9 APIs** to **21+ APIs**:
+- Google Cloud Vision API (image verification)
+- Google Cloud Translation API (multilingual support)
+- Firebase Cloud Messaging (push notifications)
+- Google Cloud AutoML (predictive analytics)
+- Google Assistant SDK (voice commands)
+- ARCore API (augmented reality features)
+
+### 🏢 **Enterprise Development Goals**
+- **Multi-tenant architecture** for city-wide deployments
+- **Government compliance** (GDPR, HIPAA, security standards)
+- **Professional support** with 24/7 monitoring
+- **Custom integrations** with existing city infrastructure
+- **Revenue model**: $500K-$5M+ annual enterprise contracts
 
 ## 🏗️ Architecture
 
@@ -234,9 +275,31 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ## 🚀 Deployment
 
-**Current Deployment**: Successfully deployed at [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
+**Current Deployment**: [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
 
-**Deployment Status**: ✅ Live and operational
+**Deployment Status**: ⚠️ May be temporarily unavailable due to GCP subscription constraints
+
+### Local Deployment
+```bash
+# Clone and setup
+git clone https://github.com/yourusername/safetymapper.git
+cd safetymapper
+pip install -r requirements.txt
+
+# Configure your API keys in main.py
+# Run locally
+python main.py
+# Access at http://localhost:8000
+```
+
+### Production Deployment
+```bash
+# Deploy to Google App Engine
+gcloud app deploy
+
+# Deploy to other platforms
+# Docker, Heroku, AWS, etc. supported
+```
 
 ## 📊 Data Schema
 
@@ -275,6 +338,29 @@ GEMINI_API_KEY=your_gemini_api_key
 - **Secure API key management**
 - **Firestore security rules**
 
+## 💡 Future Investment Opportunities
+
+SafetyMapper represents a significant opportunity in the **$3.5B+ community safety market**:
+
+### 💰 **Revenue Potential**
+- **Enterprise contracts**: $500K-$5M+ annually per major city
+- **Government partnerships**: $1M-$50M+ multi-year contracts
+- **SaaS subscriptions**: $5-$50/user/month for professional tiers
+- **API licensing**: Revenue share with third-party integrations
+
+### 🎯 **Market Opportunity**
+- **567 cities** in the US with 100K+ population
+- **Growing demand** for data-driven public safety solutions
+- **Smart city initiatives** driving government technology adoption
+- **Enterprise safety compliance** requirements increasing
+
+### 🚀 **Investment Needed**
+- **Phase 1**: $250K for core feature development and team expansion
+- **Phase 2**: $1M for enterprise features and market expansion  
+- **Phase 3**: $5M+ for national scaling and advanced AI capabilities
+
+**Contact us for partnership and investment opportunities.**
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -305,11 +391,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📸 Screenshots & Documentation
 
 ### Application Screenshots
-*[Add screenshots here to showcase the application interface]*
+*Note: If the live demo is inaccessible, these screenshots demonstrate the full functionality*
 
-**Live Application**: [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/)
+**Live Application**: [https://ancient-watch-460222-n5.uc.r.appspot.com/](https://ancient-watch-460222-n5.uc.r.appspot.com/) *(may be temporarily unavailable)*
 
-**Recommended screenshots to include:**
+**Key Interface Screenshots:**
 - Main dashboard with incident map
 - <img width="1469" alt="image" src="https://github.com/user-attachments/assets/3aaf75a8-1e4c-41d1-b0da-7c26ab3f6be7" />
 
@@ -332,11 +418,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Blocked Dangerous Content
 - <img width="383" alt="image" src="https://github.com/user-attachments/assets/0a30c9dc-f904-4951-b9b8-5afb52b003ca" />
 
-
-### Demo Videos
-*[Add demo videos here to show application functionality]*
-
-
 ## 🔄 Version History
 
 - **v1.0.0** - Initial release with core features
@@ -344,8 +425,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **v1.2.0** - Enhanced route planning
 - **v1.3.0** - Photo upload support
 - **v1.4.0** - Vertex AI Safety integration
-
----
+- **v2.0.0** - Future: Location-based filtering and enterprise features *(planned)*
 
 **Made with ❤️ for safer communities**
 
+*Building the future of AI-powered community safety, one neighborhood at a time.*
