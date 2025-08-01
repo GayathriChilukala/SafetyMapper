@@ -63,6 +63,12 @@ SafetyMapper demonstrates comprehensive use of Google Maps Platform, showcasing 
 - **Visualization Library**: Crime density heatmaps with weighted incident visualization and dynamic overlays
 - **Geometry Library**: Distance calculations, route segment analysis, and proximity computations for safety scoring
 
+## Google Cloud APIs (3 APIs):
+
+- **Firestore API** - Database storage and retrieval
+- **Vertex AI API** - AI safety moderation
+- **Generative AI API** - Google Gemini integration
+
 ### **Innovation in Maps Usage**
 - **Safety-First Route Planning**: Routes dynamically scored based on incident proximity and safety resource availability
 - **Community Intelligence Integration**: Crowdsourced safety data seamlessly integrated with official mapping data
